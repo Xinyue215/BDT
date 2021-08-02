@@ -24,24 +24,28 @@ start = time.time()
 
 gamma = 2.7
 
-
+#load test and train data
 
 Data_array_train = '/data/user/xk35/BDT/2016/Precut_files/Data_post_cut_gamma_2.7_24days_v2.npy'
 Data_array_test = '/data/user/xk35/BDT/2016/Precut_files/Data_post_cut_gamma_2.7_24days_test_v2.npy'
 
+Data_train = np.load(Data_array_train)
+Data_test = np.load(Data_array_test)
+
+
+#MC: half train half test
 MC_array = '/data/user/xk35/BDT/2016/Precut_files/MC_post_cut_gamma_2.7_3000_v2.npy'
 
-
-Data_train = np.load(Data_array_train)
 MC = np.load(MC_array)
-MC['ow'] = MC['ow']*2
-MC_train = MC[:int(len(MC)/2)]
 
-Data_test = np.load(Data_array_test)
-MC_test = MC[int(len(MC)/2):]
+MC['ow'] = MC['ow']*2 #ow *2 since MC is split in half
+MC_train, MC_test = train_test_split(MC, test_size = 0.5)
+
+#MC_train = MC[:int(len(MC)/2)]
+#MC_test = MC[int(len(MC)/2):]
 
 
-
+#livetime
 def calculate_LT(Data):
 
 	LT_day = 0
@@ -63,7 +67,7 @@ print('train day' , LT_train/86400.)
 LT_test = calculate_LT(Data_test)
 print('test day' , LT_test/86400.)
 
-
+#weight 
 def calculate_weight(MC, LT):
 
 	fluxNorm = 1.0e-18
@@ -79,7 +83,8 @@ def calculate_weight(MC, LT):
 calculate_weight(MC_train, LT_train)
 calculate_weight(MC_test, LT_test)
 
-
+# put together 13 features used to train BDT
+# also included other features used for sensitivity calculation later  
 def makeFeatures (feature_name, MC, Data):
 	Features = np.zeros((len(MC) + len(Data), len(feature_name)))
 	Data['weights'] = 10*np.ones(len(Data))
@@ -99,7 +104,7 @@ Features_train, Event_Type_train = makeFeatures(feature_name, MC_train, Data_tra
 Features_test, Event_Type_test = makeFeatures(feature_name, MC_test, Data_test)
 
 	
-
+#shuffle train and test matrices
 X_train = Features_train.copy()
 np.random.shuffle(X_train)     
 X_test = Features_test.copy()  
@@ -131,7 +136,7 @@ Data_test = X_test[~mask_mc]
 np.save('/data/user/xk35/BDT/2016/Trained/MC_24_3000_v1.npy',MC_test)
 np.save('/data/user/xk35/BDT/2016/Trained/Data_24_3000_v1.npy', Data_test)
 	
-#get rid of weights before training, 13 trainingf features
+#get rid of weights before training, 13 training features
 tot_fet = len(feature_name)
 X_train = np.delete(X_train, np.arange(13,tot_fet), axis = 1)
 X_test = np.delete(X_test, np.arange(13,tot_fet), axis = 1)
@@ -146,7 +151,6 @@ def compute_models(*args):
 		clf = classifier(**kwargs)
 		clf.fit(X_train, y_train)
         
-        	#Note that we are outputing the probabilities [of class 1], not the classes
 		y_probs = clf.predict_proba(X_test)[:, 1]
 
 		names.append(classifier.__name__)
