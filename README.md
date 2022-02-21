@@ -1,4 +1,4 @@
-# Event Selection at the Galacic Center Region with IceCube 
+# Event Selection at the Galacic Center Region with IceCube Usinus Boosted Decision Tree
 This project is an event selection on level 3 tack events at the Galactic Center region (GC declination +- 10 degrees) using boosted decison tree with classification. 
 The model indents to select well-reconstructed events and reduce background rate. Simulated Monte Carlo (MC) signal events and real collected data are used as 
 signal and background respectively as training data.
